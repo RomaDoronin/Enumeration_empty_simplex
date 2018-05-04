@@ -1,5 +1,4 @@
 #include <iostream>
-using namespace std;
 
 /*----------------------------------------------------*/
 // Директивы
@@ -12,16 +11,16 @@ using namespace std;
 // Макросы
 
 #define SMP_NEW(mas, n, type) mas = new type*[n]; \
-for (int i = 0; i < n; i++) \
-	mas[i] = new type[n]
+for (int newCount = 0; newCount < n; newCount++) \
+	mas[newCount] = new type[n]
 
-#define SMP_DELETE(mas, n) for (int i = 0; i < n; i++) \
-delete[] mas[i]
+#define SMP_DELETE(mas, n) for (int deleteCount = 0; deleteCount < n; deleteCount++) \
+delete[] mas[deleteCount]
 
 /*----------------------------------------------------*/
 // Дополнительные функции
 
-// Получение матрицы без i-й строки и j-го столбца
+// Получение матрицы без i-й строки и j-го столбца | Для функции Determinant()
 void GetMatr(int **mas, int **p, int i, int j, int m) {
 	int ki, kj, di, dj;
 	di = 0;
@@ -43,7 +42,7 @@ int Determinant(int **mas, int m) {
 	j = 0; d = 0;
 	k = 1; //(-1) в степени i
 	n = m - 1;
-	if (m < 1) cout << "The determinant cannot be computed!";
+	if (m < 1) std::cout << "The determinant cannot be computed!";
 
 	if (m == 1) {
 		d = mas[0][0];
@@ -117,8 +116,8 @@ double* Gauss(double **a, double *y, int n)
 		if (max < eps)
 		{
 			// нет ненулевых диагональных элементов
-			cout << "Решение получить невозможно из-за нулевого столбца ";
-			cout << index << " матрицы A" << endl;
+			std::cout << "Решение получить невозможно из-за нулевого столбца ";
+			std::cout << index << " матрицы A" << std::endl;
 			return 0;
 		}
 		for (int j = 0; j < n; j++)
@@ -156,7 +155,7 @@ double* Gauss(double **a, double *y, int n)
 }
 
 /*----------------------------------------------------*/
-// Класс симплекса [ Ax <= b ] -> [ AQx <= b ] -> [ Hx <= b ]
+// Класс симплекса [ Ax <= b ] -> [ AQx <= b ] -> [ Hx <= b ] (Форма Эрмита)
 class Simplex {
 public:
 	int **H;         // Матрица H
@@ -188,7 +187,7 @@ public:
 		SMP_DELETE(H, n);
 	}
 
-	// Возвращает транспонированную матрицу
+	// Возвращает транспонированную матрицу H
 	int** Transposition()
 	{
 		int **Tm;
@@ -202,27 +201,32 @@ public:
 	}
 
 	/*----------------------------------------------------*/
-	// Функции для работы с крышкой
+	// Методы для работы с крышкой
 
-	void f(int m, int *C)
+	// Рекурсивный перебор целых точек в n-мерном параллелепипиде, составленный из строк матрицы H
+	void EnumerationIntPointsInParal(int m, int *C)
 	{
 		m++;
-
+		// Перебор всех целых точек
 		if (m != n)
 			for (int i = 0; i <= ColomnSum(m); i++)
 			{
 				C[m] = i;
-				f(m, C);
+				EnumerationIntPointsInParal(m, C);
 			}
 		else
-		{
+		{ // Провеверка точек на пренадлежность паралелограмму из строк H
 			double *t = new double[n];
 			t = Gauss(MatIntToDouble(Transposition(), n), VecIntToDouble(C, n), n);
 
 			// Проверяем что t[i] принадлежат (0,1]
 			for (int i = 0; i < n; i++)
-				if (t[i] <= 0 || t[i] > 1)
+				if (t[i] <= 0 || t[i] > 1) {
+					delete[] t;
 					return;
+				}
+
+			delete[] t;
 			
 			// Если прошло, значит выполнено 1-ое УСЛОВИЕ
 
@@ -235,10 +239,10 @@ public:
 			FindC0(); // Поск элемента с0
 
 			//!
-			cout << endl << "A suitable cover: ( ";
+			std::cout << std::endl << "A suitable cover: ( ";
 			for (int i = 0; i < n; i++)
-				cout << cover[i] << " ";
-			cout << ") | (" << c0 << ")" << endl;
+				std::cout << cover[i] << " ";
+			std::cout << ") | (" << c0 << ")" << std::endl;
 		}
 
 
@@ -258,18 +262,21 @@ public:
 	void EnumerationIntDot()
 	{
 		int det = Determinant(H, n);
-		cout << endl << "Det(H) = " << det;
-		cout << endl << "Number of integer dots: " << det << " +" << n << " with one unit in the vector, but they do not output" << endl;
+		std::cout << std::endl << "Det(H) = " << det;
+		std::cout << std::endl << "Number of integer dots: " << det; //<< " + " << n << " with one unit in the vector, but they do not output" << endl;
 
 		int *C = new int[n];
 		for (int i = 0; i < n; i++)
 			C[i] = 0;
 
-		for (int i = 0; i <= ColomnSum(0); i++)
+		// Начало перебора целых точек в параллелепипеде 
+		for (int i = 0; i <= ColomnSum(0); i++) // ColomnSum(0) - Высота параллелепипеда по первой оси
 		{
 			C[0] = i;
-			f(0, C);
+			EnumerationIntPointsInParal(0, C);
 		}
+
+		delete[] C;
 	}
 
 	// Проверка определителей с замененной строкой | 2-ое УСЛОВИЕ
@@ -303,11 +310,11 @@ public:
 	// Функция поиска c0
 	void FindC0()
 	{
-		double *V = Gauss(MatIntToDouble(H, n), VecIntToDouble(b, n), n);
+		double *V = Gauss(MatIntToDouble(H, n), VecIntToDouble(b, n), n); // Вершина конуса
 		double delt = 0;
 
 		for (int i = 0; i < n; i++)
-			delt += V[i] * (-1) * cover[i];	
+			delt += V[i] * cover[i];	
 
 		if (ceil(delt) != delt)
 			c0 = ceil(delt);
@@ -378,14 +385,14 @@ public:
 	// Печать симплекса
 	void printSimplex()
 	{
-		std::cout << "( " << endl;
+		std::cout << "( " << std::endl;
 		for (int i = 0; i < n; i++)
 		{
 			for (int j = 0; j < n; j++)
 				std::cout << H[i][j] << " ";
-			std::cout << " | " << b[i] << endl;
+			std::cout << " | " << b[i] << std::endl;
 		}
-		std::cout << ")" << endl;
+		std::cout << ")" << std::endl;
 	}
 
 	// Возвращает произведение элементов главной диагонали
@@ -429,9 +436,9 @@ public:
 // Тестовая функция
 void GetAllSimplex(int n, int delta)
 {
-	std::cout << "Simplex" << endl;
-	std::cout << "N: " << n << endl;
-	std::cout << "Delta: " << delta << endl;
+	std::cout << "Simplex" << std::endl;
+	std::cout << "N: " << n << std::endl;
+	std::cout << "Delta: " << delta << std::endl;
 
 	Simplex s(n, delta + 1);
 
@@ -469,15 +476,15 @@ void GetAllSimplex(int n, int delta)
 	}
 
 #ifdef DEBUG
-	std::cout << "Complexity: " << Complexity << endl;
+	std::cout << "Complexity: " << Complexity << std::endl;
 #endif
-	std::cout << "Number of cone: " << NumOfCone << endl;
+	std::cout << "Number of cone: " << NumOfCone << std::endl;
 }
 
 int main(int argc, char** argv)
 {
 
-	int MaxDimensionSize = 15;
+	int MaxDimensionSize = 15; // Максивальная размерность
 	int Delta = 5; // Оптимальное значение дельта
 	int N = 2;
 

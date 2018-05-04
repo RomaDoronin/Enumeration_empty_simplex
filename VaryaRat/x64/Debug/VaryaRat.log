@@ -1,7 +1,7 @@
 ﻿  main.cpp
-c:\users\doronin roman\documents\visual studio 2015\projects\varyarat\varyarat\main.cpp(313): warning C4244: =: преобразование "double" в "int", возможна потеря данных
-c:\users\doronin roman\documents\visual studio 2015\projects\varyarat\varyarat\main.cpp(315): warning C4244: =: преобразование "double" в "int", возможна потеря данных
-c:\users\doronin roman\documents\visual studio 2015\projects\varyarat\varyarat\main.cpp(352): warning C4715: Simplex::IncSimp: значение возвращается не при всех путях выполнения
-c:\users\doronin roman\documents\visual studio 2015\projects\varyarat\varyarat\main.cpp(370): warning C4715: Simplex::IncB: значение возвращается не при всех путях выполнения
+c:\users\doronin roman\documents\visual studio 2015\projects\varyarat\varyarat\main.cpp(320): warning C4244: =: преобразование "double" в "int", возможна потеря данных
+c:\users\doronin roman\documents\visual studio 2015\projects\varyarat\varyarat\main.cpp(322): warning C4244: =: преобразование "double" в "int", возможна потеря данных
+c:\users\doronin roman\documents\visual studio 2015\projects\varyarat\varyarat\main.cpp(377): warning C4715: Simplex::IncB: значение возвращается не при всех путях выполнения
+c:\users\doronin roman\documents\visual studio 2015\projects\varyarat\varyarat\main.cpp(359): warning C4715: Simplex::IncSimp: значение возвращается не при всех путях выполнения
   VaryaRat.vcxproj -> C:\Users\Doronin Roman\Documents\Visual Studio 2015\Projects\VaryaRat\x64\Debug\VaryaRat.exe
   VaryaRat.vcxproj -> C:\Users\Doronin Roman\Documents\Visual Studio 2015\Projects\VaryaRat\x64\Debug\VaryaRat.pdb (Full PDB)
