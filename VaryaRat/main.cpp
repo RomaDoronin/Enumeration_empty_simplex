@@ -1,9 +1,11 @@
 #include <iostream>
+#include <ctime>
 
 /*----------------------------------------------------*/
 // Директивы
 
 //#define DEBUG
+#define OLD_CODE
 #define SMP_INIT_MODE_0 0
 #define SMP_INIT_MODE_1 1
 
@@ -203,10 +205,11 @@ public:
 	/*----------------------------------------------------*/
 	// Методы для работы с крышкой
 
+#ifdef OLD_CODE
 	// Рекурсивный перебор целых точек в n-мерном параллелепипиде, составленный из строк матрицы H
 	void EnumerationIntPointsInParal(int m, int *C)
 	{
-		m++;
+		m++; // Параметр отвечающий за остановку рекурсии, по сути считает чтобы мы мы не вышли за n 
 		// Перебор всех целых точек
 		if (m != n)
 			for (int i = 0; i <= ColomnSum(m); i++)
@@ -258,12 +261,12 @@ public:
 		return sum;
 	}
 
-	// !!! Пока без отрицательных чисел
+	// Перечисление целых точек !!! Пока без отрицательных чисел
 	void EnumerationIntDot()
 	{
 		int det = Determinant(H, n);
 		std::cout << std::endl << "Det(H) = " << det;
-		std::cout << std::endl << "Number of integer dots: " << det; //<< " + " << n << " with one unit in the vector, but they do not output" << endl;
+		std::cout << std::endl << "Number of integer dots: " << det << std::endl;
 
 		int *C = new int[n];
 		for (int i = 0; i < n; i++)
@@ -272,11 +275,64 @@ public:
 		// Начало перебора целых точек в параллелепипеде 
 		for (int i = 0; i <= ColomnSum(0); i++) // ColomnSum(0) - Высота параллелепипеда по первой оси
 		{
-			C[0] = i;
+			C[0] = i; // Проверяемая точка на принадлежность к параллелепипеду
 			EnumerationIntPointsInParal(0, C);
 		}
 
 		delete[] C;
+	}
+#endif
+
+	// Функция считающая сумму t[i]*Ht[m] вправа от Ht[m][m]
+	double Tau(int **Ht, double *t, int m)
+	{
+		double sum = 0;
+		for (int i = m + 1; i < n; i++)
+			sum += Ht[m][i] * t[i];
+
+		return sum;
+	}
+
+	// Перечисление целых точек ПРАВИЛЬНАЯ реализация. Только для положительных коэффициентов H
+	// t - вектор условных переменных по которым проверяются x
+	// m - степень погружения, переменная для остановки рекурсии
+	// x - искомый вектор крышек
+	void EnumIntDot(int **Ht, double *t, int m, int *x)
+	{
+		double tauVal = Tau(Ht, t, m);
+		int res = ceil(tauVal);
+		if (ceil(tauVal) == tauVal)
+			res++;
+
+		t[m] = (res - tauVal) / Ht[m][m];
+
+		while (t[m] <= 1)
+		{
+			x[m] = res;
+			if (m != 0)
+				EnumIntDot(Ht, t, m - 1, x);
+			else
+			{
+				for (int i = 0; i < n; i++)
+					cover[i] = -x[i];
+
+				if (!CheckDeterminants()) // Проверка 2-ого УСЛОВИЯ
+				{
+					std::cout << std::endl << "FAILED: CheckDeterminants()";
+					return;
+				}
+
+				FindC0(); // Поск элемента с0
+
+				std::cout << std::endl << "A suitable cover: ( ";
+				for (int i = 0; i < n; i++)
+					std::cout << cover[i] << " ";
+				std::cout << ") | (" << c0 << ")" << std::endl;
+			}
+
+			res++;
+			t[m] = (res - tauVal) / Ht[m][m];
+		}
 	}
 
 	// Проверка определителей с замененной строкой | 2-ое УСЛОВИЕ
@@ -325,11 +381,16 @@ public:
 	/*----------------------------------------------------*/
 
 	// Инициализация еденицами и нулями
-	void InitDef(int Mode = SMP_INIT_MODE_0) // Mode 0 - с инициализацией главной диагонали, Mode 1 без
+	void InitDef(int Mode = SMP_INIT_MODE_0) // Mode 0 - с инициализацией главной диагонали и вектора b, Mode 1 без
 	{
 		for (int i = 0; i < n; i++)
 		{
-			if (Mode == SMP_INIT_MODE_0) b[i] = 0;
+			if (Mode == SMP_INIT_MODE_0)
+			{
+				b[i] = 0;
+				cover[i] = 0;
+			}
+
 			for (int j = 0; j < n; j++)
 				if (i == j)
 				{
@@ -338,6 +399,8 @@ public:
 				else
 					H[i][j] = 0;
 		}
+
+		c0 = 0;
 	}
 
 	// Инкрементация симплекса с учетом, того что значения слева больше значений справа (Главная диагональ)
@@ -385,14 +448,14 @@ public:
 	// Печать симплекса
 	void printSimplex()
 	{
-		std::cout << "( " << std::endl;
+		std::cout << "> " << std::endl;
 		for (int i = 0; i < n; i++)
 		{
 			for (int j = 0; j < n; j++)
 				std::cout << H[i][j] << " ";
 			std::cout << " | " << b[i] << std::endl;
 		}
-		std::cout << ")" << std::endl;
+		std::cout << "< " << std::endl;
 	}
 
 	// Возвращает произведение элементов главной диагонали
@@ -432,8 +495,8 @@ public:
 };
 
 /*----------------------------------------------------*/
+// Тестовая функции
 
-// Тестовая функция
 void GetAllSimplex(int n, int delta)
 {
 	std::cout << "Simplex" << std::endl;
@@ -481,22 +544,67 @@ void GetAllSimplex(int n, int delta)
 	std::cout << "Number of cone: " << NumOfCone << std::endl;
 }
 
+void GetAllCovers(Simplex *S, int N)
+{
+	double *t = new double[N];
+	int *x = new int[N];
+	for (int i = 0; i < N; i++)
+	{
+		t[i] = 0;
+		x[i] = 0;
+	}
+
+	// На вход идут транспонированная матрица H, два пустых вектора t и x, значение m - точка погружения 
+	S->EnumIntDot(S->Transposition(), t, N - 1, x);
+
+	delete[] t;
+	delete[] x;
+}
+
+/*----------------------------------------------------*/
+
+//#define TWO
+
 int main(int argc, char** argv)
 {
+	//int MaxDimensionSize = 15; // Максивальная размерность
 
-	int MaxDimensionSize = 15; // Максивальная размерность
-	int Delta = 5; // Оптимальное значение дельта
+#ifdef TWO
+	// Пример двухмерной задачи
+	int Delta = 4;
 	int N = 2;
-
 	Simplex S(N, Delta + 1);
 
 	S.H[1][0] = 3; S.H[1][1] = 4;
 	S.b[1] = 2;
+#else
+	// Пример трехмерной задачи
+	int Delta = 9;
+	int N = 9;
+	Simplex S(N, Delta + 1);
+
+	S.H[1][0] = 1; S.H[1][1] = 2;
+	S.H[2][0] = 3; S.H[2][1] = 3; S.H[2][2] = 4;
+	S.b[1] = 1; S.b[2] = 1;
+#endif
 
 	S.printSimplex();
 
+#ifdef OLD_CODE
+	std::cout << std::endl << "#OLD_CODE" << std::endl;
+	unsigned int start_time = clock();
 	S.EnumerationIntDot();
+	unsigned int end_time = clock();
+	std::cout << std::endl << "Time: " << (double)(end_time - start_time) / 1000 << std::endl;
+	std::cout << std::endl << "#OLD_CODE" << std::endl;
+#endif
 
+	start_time = clock();
+	GetAllCovers(&S, N);
+	end_time = clock();
+	std::cout << std::endl << "Time: " << (double)(end_time - start_time) / 1000 << std::endl;
+
+	std::cout << std::endl;
 	//GetAllSimplex(N, Delta);
 
 	return 0;

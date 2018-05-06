@@ -1,1 +1,0 @@
-VaryaRat.exe -axis 1 1 0 -angle 90
