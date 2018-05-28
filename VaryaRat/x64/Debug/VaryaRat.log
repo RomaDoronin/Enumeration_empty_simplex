@@ -1,0 +1,2 @@
+﻿  main.cpp
+c:\program files\ibm\ilog\cplex_studio_community128\concert\include\ilconcert\ilosys.h(391): fatal error C1083: Не удается открыть файл включение: iostream.h: No such file or directory
