@@ -1,12 +1,17 @@
 ﻿  main.cpp
-main.cpp(221): warning C4244: инициализация: преобразование "double" в "int", возможна потеря данных
-main.cpp(312): warning C4244: =: преобразование "double" в "int", возможна потеря данных
-main.cpp(314): warning C4244: =: преобразование "double" в "int", возможна потеря данных
-main.cpp(698): warning C4244: =: преобразование "const IloNum" в "int", возможна потеря данных
+main.cpp(386): warning C4244: инициализация: преобразование "double" в "int", возможна потеря данных
+main.cpp(492): warning C4244: =: преобразование "double" в "int", возможна потеря данных
+main.cpp(494): warning C4244: =: преобразование "double" в "int", возможна потеря данных
+main.cpp(188): warning C4244: =: преобразование "const IloNum" в "int", возможна потеря данных
+  main.cpp(992): note: см. ссылку на создание экземпляров функции шаблон при компиляции "void CPLEX_MIP<int>(T *,MipSwitch,int **,int *,int,int,T *,Target,AdditRestr)"
+          with
+          [
+              T=int
+          ]
   Создание кода
-  6 of 140 functions ( 4.3%) were compiled, the rest were copied from previous compilation.
+  13 of 332 functions ( 3.9%) were compiled, the rest were copied from previous compilation.
     0 functions were new in current compilation
-    3 functions had inline decision re-evaluated but remain unchanged
+    1 functions had inline decision re-evaluated but remain unchanged
   Создание кода завершено
 concert.lib(ilosstructi.obj) : warning LNK4099: "concert.pdb" PDB не найден с "concert.lib(ilosstructi.obj)" или на "C:\Users\Doronin Roman\Documents\Visual Studio 2015\Projects\VaryaRat\x64\Release\concert.pdb"; компоновка объекта выполняется как при отсутствии отладочных данных
 concert.lib(ilohash.obj) : warning LNK4099: "concert.pdb" PDB не найден с "concert.lib(ilohash.obj)" или на "C:\Users\Doronin Roman\Documents\Visual Studio 2015\Projects\VaryaRat\x64\Release\concert.pdb"; компоновка объекта выполняется как при отсутствии отладочных данных

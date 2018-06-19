@@ -1,0 +1,625 @@
+Simplex
+N: 2
+Delta: 4
+
+
+Number of cone: 0
+Determinate: 1
+
+Number of con-----------------------------
+-----------------------------
+Time: 4.139
+
+-----------------------------------------------------------
+ber of cone: 11
+Determinate: 3
+
+Number of cone: 14
+Determinate: 4
+
+Number of cone: 18
+Determinate: 4
+
+Number of cone: 22
+Determinate: 4
+
+Number of cone: 26
+Determinate: 4
+
+Number of cone: 30
+Determinate: 4
+
+Number of cone: 32
+Determinate: 4
+
+Number of cone: 34
+Determinate: 4
+
+Number of cone: 36
+Determinate: 4Number of all cones: 38
+0)
+Void check : Empty
+Width: 0.408248
+A suitable cover: ( -1 -2 ) | (0)
+Void check : Empty
+Width: 0.5
+
+
+Number of cone: 4
+> 
+1 0  | 0
+1 2  | 1
+< 
+Determinate: 2A suitable cover: ( -1 -1 ) | (0)
+Void check : Empty
+Width: 0.5
+A suitable cover: ( -2 -2 ) | (0)
+Void check : Empty
+Width: 0.5
+> 
+1 0  | 0
+0 3  | 0
+< 
+A suitable cover: ( -1 -1 ) | (1)
+Void check : Empty
+Width: 0.5
+A suitable cover: ( -1 -2 ) | (1)
+Void check : Empty
+Width: 0.447214
+A suitable cover: ( -1 -3 ) | (1)
+Void check : Empty
+Width: 0.408248
+
+
+Number of cone: 6
+> 
+1 0  | 0
+1 3  | 0
+< 
+Determinate: 3A suitable cover: ( -1 -1 ) | (1)
+Void check : Empty
+Width: 0.57735
+A suitable cover: ( -1 -2 ) | (1)
+Void check : Empty
+Width: 0.57735
+A suitable cover: ( -2 -3 ) | (1)
+Void check : Empty
+Width: 0.408248
+
+
+Number of cone: 7
+> 
+1 0  | 0
+2 3  | 0
+< 
+Determinate: 3A suitable cover: ( -1 -1 ) | (1)
+Void check : Empty
+Width: 0.707107
+A suitable cover: ( -2 -2 ) | (1)
+Void check : Empty
+Width: 0.5
+A suitable cover: ( -3 -3 ) | (1)
+Void check : Empty
+Width: 0.408248
+> 
+1 0  | 0
+0 3  | 1
+< 
+A suitable cover: ( -1 -1 ) | (0)
+Void check : Empty
+Width: 0.288675
+A suitable cover: ( -1 -2 ) | (0)
+Void check : Empty
+Width: 0.365148
+A suitable cover: ( -1 -3 ) | (0)
+Void check : Empty
+Width: 0.408248
+
+
+Number of cone: 9
+> 
+1 0  | 0
+1 3  | 1
+< 
+Determinate: 3A suitable cover: ( -1 -1 ) | (0)
+Void check : Empty
+Width: 0.333333
+A suitable cover: ( -1 -2 ) | (0)
+Void check : Empty
+Width: 0.471405
+A suitable cover: ( -2 -3 ) | (0)
+Void check : Empty
+Width: 0.408248
+
+
+Number of cone: 10
+> 
+1 0  | 0
+2 3  | 1
+< 
+Determinate: 3A suitable cover: ( -1 -1 ) | (0)
+Void check : Empty
+Width: 0.408248
+A suitable cover: ( -2 -2 ) | (0)
+Void check : Empty
+Width: 0.408248
+A suitable cover: ( -3 -3 ) | (0)
+Void check : Empty
+Width: 0.408248
+> 
+1 0  | 0
+0 3  | 2
+< 
+A suitable cover: ( -1 -1 ) | (0)
+Void check : Empty
+Width: 0.408248
+A suitable cover: ( -1 -2 ) | (-1)
+Void check : Empty
+Width: 0.258199
+A suitable cover: ( -1 -3 ) | (-1)
+Void check : Empty
+Width: 0.408248
+
+
+Number of cone: 12
+> 
+1 0  | 0
+1 3  | 2
+< 
+Determinate: 3A suitable cover: ( -1 -1 ) | (0)
+Void check : Empty
+Width: 0.471405
+A suitable cover: ( -1 -2 ) | (-1)
+Void check : Empty
+Width: 0.333333
+A suitable cover: ( -2 -3 ) | (-1)
+Void check : Empty
+Width: 0.408248
+
+
+Number of cone: 13
+> 
+1 0  | 0
+2 3  | 2
+< 
+Determinate: 3A suitable cover: ( -1 -1 ) | (0)
+Void check : Empty
+Width: 0.57735
+A suitable cover: ( -2 -2 ) | (-1)
+Void check : Empty
+Width: 0.288675
+A suitable cover: ( -3 -3 ) | (-1)
+Void check : Empty
+Width: 0.408248
+> 
+1 0  | 0
+0 4  | 0
+< 
+A suitable cover: ( -1 -1 ) | (1)
+Void check : Empty
+Width: 0.447214
+A suitable cover: ( -1 -2 ) | (1)
+Void check : Empty
+Width: 0.408248
+A suitable cover: ( -1 -3 ) | (1)
+Void check : Empty
+Width: 0.377964
+A suitable cover: ( -1 -4 ) | (1)
+Void check : Empty
+Width: 0.353553
+
+
+Number of cone: 15
+> 
+1 0  | 0
+1 4  | 0
+< 
+Determinate: 4A suitable cover: ( -1 -1 ) | (1)
+Void check : Empty
+Width: 0.5
+A suitable cover: ( -1 -2 ) | (1)
+Void check : Empty
+Width: 0.5
+A suitable cover: ( -1 -3 ) | (1)
+Void check : Empty
+Width: 0.5
+A suitable cover: ( -2 -4 ) | (1)
+Void check : Empty
+Width: 0.353553
+
+
+Number of cone: 16
+> 
+1 0  | 0
+2 4  | 0
+< 
+Determinate: 4A suitable cover: ( -1 -1 ) | (1)
+Void check : Empty
+Width: 0.57735
+A suitable cover: ( -2 -2 ) | (1)
+Void check : Empty
+Width: 0.408248
+A suitable cover: ( -2 -3 ) | (1)
+Void check : Empty
+Width: 0.447214
+A suitable cover: ( -3 -4 ) | (1)
+Void check : Empty
+Width: 0.353553
+
+
+Number of cone: 17
+> 
+1 0  | 0
+3 4  | 0
+< 
+Determinate: 4A suitable cover: ( -1 -1 ) | (1)
+Void check : Empty
+Width: 0.707107
+A suitable cover: ( -2 -2 ) | (1)
+Void check : Empty
+Width: 0.5
+A suitable cover: ( -3 -3 ) | (1)
+Void check : Empty
+Width: 0.408248
+A suitable cover: ( -4 -4 ) | (1)
+Void check : Empty
+Width: 0.353553
+> 
+1 0  | 0
+0 4  | 1
+< 
+A suitable cover: ( -1 -1 ) | (0)
+Void check : Empty
+Width: 0.223607
+A suitable cover: ( -1 -2 ) | (0)
+Void check : Empty
+Width: 0.288675
+A suitable cover: ( -1 -3 ) | (0)
+Void check : Empty
+Width: 0.327327
+A suitable cover: ( -1 -4 ) | (0)
+Void check : Empty
+Width: 0.353553
+
+
+Number of cone: 19
+> 
+1 0  | 0
+1 4  | 1
+< 
+Determinate: 4A suitable cover: ( -1 -1 ) | (0)
+Void check : Empty
+Width: 0.25
+A suitable cover: ( -1 -2 ) | (0)
+Void check : Empty
+Width: 0.353553
+A suitable cover: ( -1 -3 ) | (0)
+Void check : Empty
+Width: 0.433013
+A suitable cover: ( -2 -4 ) | (0)
+Void check : Empty
+Width: 0.353553
+
+
+Number of cone: 20
+> 
+1 0  | 0
+2 4  | 1
+< 
+Determinate: 4A suitable cover: ( -1 -1 ) | (0)
+Void check : Empty
+Width: 0.288675
+A suitable cover: ( -2 -2 ) | (0)
+Void check : Empty
+Width: 0.288675
+A suitable cover: ( -2 -3 ) | (0)
+Void check : Empty
+Width: 0.387298
+A suitable cover: ( -3 -4 ) | (0)
+Void check : Empty
+Width: 0.353553
+
+
+Number of cone: 21
+> 
+1 0  | 0
+3 4  | 1
+< 
+Determinate: 4A suitable cover: ( -1 -1 ) | (0)
+Void check : Empty
+Width: 0.353553
+A suitable cover: ( -2 -2 ) | (0)
+Void check : Empty
+Width: 0.353553
+A suitable cover: ( -3 -3 ) | (0)
+Void check : Empty
+Width: 0.353553
+A suitable cover: ( -4 -4 ) | (0)
+Void check : Empty
+Width: 0.353553
+> 
+1 0  | 0
+0 4  | 2
+< 
+A suitable cover: ( -1 -1 ) | (0)
+Void check : Empty
+Width: 0.316228
+A suitable cover: ( -1 -2 ) | (0)
+Void check : Empty
+Width: 0.408248
+A suitable cover: ( -1 -3 ) | (-1)
+Void check : Empty
+Width: 0.267261
+A suitable cover: ( -1 -4 ) | (-1)
+Void check : Empty
+Width: 0.353553
+
+
+Number of cone: 23
+> 
+1 0  | 0
+1 4  | 2
+< 
+Determinate: 4A suitable cover: ( -1 -1 ) | (0)
+Void check : Empty
+Width: 0.353553
+A suitable cover: ( -1 -2 ) | (0)
+Void check : Empty
+Width: 0.5
+A suitable cover: ( -1 -3 ) | (-1)
+Void check : Empty
+Width: 0.353553
+A suitable cover: ( -2 -4 ) | (-1)
+Void check : Empty
+Width: 0.353553
+
+
+Number of cone: 24
+> 
+1 0  | 0
+2 4  | 2
+< 
+Determinate: 4A suitable cover: ( -1 -1 ) | (0)
+Void check : Empty
+Width: 0.408248
+A suitable cover: ( -2 -2 ) | (0)
+Void check : Empty
+Width: 0.408248
+A suitable cover: ( -2 -3 ) | (-1)
+Void check : Empty
+Width: 0.316228
+A suitable cover: ( -3 -4 ) | (-1)
+Void check : Empty
+Width: 0.353553
+
+
+Number of cone: 25
+> 
+1 0  | 0
+3 4  | 2
+< 
+Determinate: 4A suitable cover: ( -1 -1 ) | (0)
+Void check : Empty
+Width: 0.5
+A suitable cover: ( -2 -2 ) | (0)
+Void check : Empty
+Width: 0.5
+A suitable cover: ( -3 -3 ) | (-1)
+Void check : Empty
+Width: 0.288675
+A suitable cover: ( -4 -4 ) | (-1)
+Void check : Empty
+Width: 0.353553
+> 
+1 0  | 0
+0 4  | 3
+< 
+A suitable cover: ( -1 -1 ) | (0)
+Void check : Empty
+Width: 0.387298
+A suitable cover: ( -1 -2 ) | (-1)
+Void check : Empty
+Width: 0.288675
+A suitable cover: ( -1 -3 ) | (-2)
+Void check : Empty
+Width: 0.188982
+A suitable cover: ( -1 -4 ) | (-2)
+Void check : Empty
+Width: 0.353553
+
+
+Number of cone: 27
+> 
+1 0  | 0
+1 4  | 3
+< 
+Determinate: 4A suitable cover: ( -1 -1 ) | (0)
+Void check : Empty
+Width: 0.433013
+A suitable cover: ( -1 -2 ) | (-1)
+Void check : Empty
+Width: 0.353553
+A suitable cover: ( -1 -3 ) | (-2)
+Void check : Empty
+Width: 0.25
+A suitable cover: ( -2 -4 ) | (-2)
+Void check : Empty
+Width: 0.353553
+
+
+Number of cone: 28
+> 
+1 0  | 0
+2 4  | 3
+< 
+Determinate: 4A suitable cover: ( -1 -1 ) | (0)
+Void check : Empty
+Width: 0.5
+A suitable cover: ( -2 -2 ) | (-1)
+Void check : Empty
+Width: 0.288675
+A suitable cover: ( -2 -3 ) | (-2)
+Void check : Empty
+Width: 0.223607
+A suitable cover: ( -3 -4 ) | (-2)
+Void check : Empty
+Width: 0.353553
+
+
+Number of cone: 29
+> 
+1 0  | 0
+3 4  | 3
+< 
+Determinate: 4A suitable cover: ( -1 -1 ) | (0)
+Void check : Empty
+Width: 0.612372
+A suitable cover: ( -2 -2 ) | (-1)
+Void check : Empty
+Width: 0.353553
+A suitable cover: ( -3 -3 ) | (-2)
+Void check : Empty
+Width: 0.204124
+A suitable cover: ( -4 -4 ) | (-2)
+Void check : Empty
+Width: 0.353553
+> 
+2 0  | 0
+0 2  | 0
+< 
+A suitable cover: ( -1 -1 ) | (1)
+Void check : Empty
+Width: 0.5
+A suitable cover: ( -2 -1 ) | (1)
+Void check : Empty
+Width: 0.408248
+A suitable cover: ( -1 -2 ) | (1)
+Void check : Empty
+Width: 0.408248
+A suitable cover: ( -2 -2 ) | (1)
+Void check : Empty
+Width: 0.353553
+
+
+Number of cone: 31
+> 
+2 0  | 0
+1 2  | 0
+< 
+Determinate: 4A suitable cover: ( -1 -1 ) | (1)
+Void check : Empty
+Width: 0.57735
+A suitable cover: ( -2 -1 ) | (1)
+Void check : Empty
+Width: 0.447214
+A suitable cover: ( -2 -2 ) | (1)
+Void check : Empty
+Width: 0.408248
+A suitable cover: ( -3 -2 ) | (1)
+Void check : Empty
+Width: 0.353553
+> 
+2 0  | 0
+0 2  | 1
+< 
+A suitable cover: ( -1 -1 ) | (0)
+Void check : Empty
+Width: 0.353553
+A suitable cover: ( -2 -1 ) | (0)
+Void check : Empty
+Width: 0.288675
+A suitable cover: ( -1 -2 ) | (0)
+Void check : Empty
+Width: 0.408248
+A suitable cover: ( -2 -2 ) | (0)
+Void check : Empty
+Width: 0.353553
+
+
+Number of cone: 33
+> 
+2 0  | 0
+1 2  | 1
+< 
+Determinate: 4A suitable cover: ( -1 -1 ) | (0)
+Void check : Empty
+Width: 0.408248
+A suitable cover: ( -2 -1 ) | (0)
+Void check : Empty
+Width: 0.316228
+A suitable cover: ( -2 -2 ) | (0)
+Void check : Empty
+Width: 0.408248
+A suitable cover: ( -3 -2 ) | (0)
+Void check : Empty
+Width: 0.353553
+> 
+2 0  | 1
+0 2  | 0
+< 
+A suitable cover: ( -1 -1 ) | (0)
+Void check : Empty
+Width: 0.353553
+A suitable cover: ( -2 -1 ) | (0)
+Void check : Empty
+Width: 0.408248
+A suitable cover: ( -1 -2 ) | (0)
+Void check : Empty
+Width: 0.288675
+A suitable cover: ( -2 -2 ) | (0)
+Void check : Empty
+Width: 0.353553
+
+
+Number of cone: 35
+> 
+2 0  | 1
+1 2  | 0
+< 
+Determinate: 4A suitable cover: ( -1 -1 ) | (0)
+Void check : Empty
+Width: 0.288675
+A suitable cover: ( -2 -1 ) | (0)
+Void check : Empty
+Width: 0.387298
+A suitable cover: ( -2 -2 ) | (0)
+Void check : Empty
+Width: 0.288675
+A suitable cover: ( -3 -2 ) | (0)
+Void check : Empty
+Width: 0.353553
+> 
+2 0  | 1
+0 2  | 1
+< 
+A suitable cover: ( -1 -1 ) | (0)
+Void check : Empty
+Width: 0.5
+A suitable cover: ( -2 -1 ) | (-1)
+Void check : Empty
+Width: 0.288675
+A suitable cover: ( -1 -2 ) | (-1)
+Void check : Empty
+Width: 0.288675
+A suitable cover: ( -2 -2 ) | (-1)
+Void check : Empty
+Width: 0.353553
+
+
+Number of cone: 37
+> 
+2 0  | 1
+1 2  | 1
+< 
+Determinate: 4A suitable cover: ( -1 -1 ) | (0)
+Void check : Empty
+Width: 0.5
+A suitable cover: ( -2 -1 ) | (-1)
+Void check : Empty
+Width: 0.223607
+A suitable cover: ( -2 -2 ) | (-1)
+Void check : Empty
+Width: 0.288675
+A suitable cover: ( -3 -2 ) | (-1)
+Void check : Empty
+Width: 0.353553

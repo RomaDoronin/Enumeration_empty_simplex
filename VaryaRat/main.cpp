@@ -3,8 +3,8 @@
 #include <iostream>
 #include <ctime>
 #include <cstdlib>
-#include <fstream>
 #include <ilcplex/ilocplex.h> // IBM ILOG CPLEX
+#include <vector>
 
 
 /*----------------------------------------------------*/
@@ -16,7 +16,15 @@
 #define SMP_INIT_MODE_0 0
 #define SMP_INIT_MODE_1 1
 
-#define TEST_MOD
+//#define TEST_MOD
+#define FILE_MODE
+
+#ifdef FILE_MODE
+#include <fstream>
+#include <iomanip>
+#endif
+
+#define NOT_WORKING -1
 
 // Цель целевой функции
 enum Target {
@@ -29,6 +37,11 @@ enum AdditRestr {
 	MIP_NONE_REST,
 	MIP_XG0, // X greater than zero
 	MIP_XL0 // X less than zero
+};
+
+enum MipSwitch {
+	MIP_ON,
+	MIP_OFF
 };
 
 /*----------------------------------------------------*/
@@ -49,11 +62,163 @@ else std::cout << "[FAILED] \n"
 class Simplex;
 bool SimplexIsEmpty(Simplex *S);
 void GetAllCovers(Simplex *S, int N);
-int CalcSimplexWidth(Simplex *S);
+void GetMatr(int **mas, int **p, int i, int j, int m);
 int Determinant(int **mas, int m);
+int** AttachedMat(int **H, int n);
 double** MatIntToDouble(int **A, int n);
 double* VecIntToDouble(int *A, int n);
 double* Gauss(double **a, double *y, int n);
+
+/*----------------------------------------------------*/
+// Возведение числа в степень
+template <typename T>
+T Expon(T num, int deg)
+{
+	T res = 1;
+	for (int i = 0; i < deg; i++)
+		res *= num;
+
+	return res;
+}
+
+// Поск обратной транспонированной матрицы, точней не совсем так:)
+int** FindAttachedMatrix(int** Mat, int n)
+{
+	int **AttachMat;
+	SMP_NEW(AttachMat, n, int);
+
+	int det = Determinant(Mat, n);
+
+	for(int i = 0; i < n; i++)
+		for (int j = 0; j < n; j++)
+		{
+			int **subMat;
+			SMP_NEW(subMat, n - 1, int);
+			GetMatr(Mat, subMat, i, j, n);
+			
+			AttachMat[i][j] = Determinant(subMat, n - 1) * Expon(-1, i + j);
+
+			if (det < 0) AttachMat[i][j] *= -1;
+
+			SMP_DELETE(subMat, n - 1);
+		}
+
+	return AttachMat;
+}
+
+// CPLEX - MIP [ObjFunc->Trg, ExprMat<=b]
+template < typename T >
+void CPLEX_MIP(T *result, MipSwitch MpiS, int **ExprMat, int *b, int Size, int exprSize, T *ObjFunc, Target Trg, AdditRestr Ar = MIP_NONE_REST)
+{
+
+	IloEnv env; // Среда
+	std::stringstream logfile;
+
+	try {
+		// lowerBound и upperBound ограничения на X
+		int upperBound = INT_MAX, lowerBound = -INT_MAX;
+		if (Ar == MIP_XG0)
+			lowerBound = 0;
+		else if (Ar == MIP_XL0)
+			upperBound = 0;
+
+		IloNumVar::Type t;
+		if (MpiS == MIP_ON)
+			t = ILOINT;
+		else
+			t = ILOFLOAT;
+		IloNumVarArray x(env, Size, lowerBound, upperBound, t);
+
+		IloModel model(env); // Модель
+		IloCplex cplex(env);
+		cplex.setOut(env.getNullStream());
+
+		cplex.setParam(IloCplex::Threads, 1);
+		//cplex.setParam(IloCplex::WorkMem, 1024);
+		cplex.setParam(IloCplex::TreLim, 2048);
+		cplex.setParam(IloCplex::Param::Parallel, 1);
+
+		cplex.extract(model);
+
+		IloNumVarArray startVar(env); // Переменные
+		IloNumArray startVal(env); // Значения переменных
+
+		for (int i = 0; i < Size; i++) {
+			startVar.add(x[i]);
+			startVal.add(0);
+		}
+
+		// Целевая функиция
+		IloExpr obj(env);
+		for (int i = 0; i < Size; i++)
+			obj += ObjFunc[i] * startVar[i];
+		if (Trg == MIP_MAX)
+			model.add(IloMaximize(env, obj));
+		else if (Trg == MIP_MIN)
+			model.add(IloMinimize(env, obj));
+		obj.end();
+
+		// Ограничения
+		for (int i = 0; i < exprSize; i++) {
+			IloExpr expr(env);
+			for (int j = 0; j < Size; j++)
+				expr += ExprMat[i][j] * startVar[j];
+			model.add(expr <= b[i]);
+			expr.end();
+		}
+
+		if (MpiS == MIP_ON) {
+			// Запуск MIP mode
+			cplex.addMIPStart(startVar, startVal);
+		}
+
+
+		// Solve
+		cplex.solve();
+		if (cplex.getStatus() == IloAlgorithm::Optimal) {
+			cplex.getValues(startVal, startVar);
+#ifdef TEST_MOD
+			env.out() << "Values = " << startVal << std::endl;
+#endif
+		}
+
+		// Переводим результат из IloNumVarArray в Int
+		const IloArray<double> &a = (IloArray<double> &)startVal;
+		for (int i = 0; i < Size; i++)
+			result[i] = a[i];
+
+		startVal.end();
+		startVar.end();
+	}
+	catch (IloException& e) {
+		std::cerr << "C-Exp: " << e << std::endl;
+	}
+	catch (...) {
+		std::cerr << "Unknown Exception" << std::endl;
+	}
+
+	//const std::string str = logfile.str();
+	//std::cout << str << std::endl;
+	env.end();
+}
+
+// n - размерность, m - высота | Cone1 разворачивем, домножив на -1 (*)
+void SetAndUniteExpr(int **exprMat, int n, int **cone1, int **cone2)
+{
+	for (int j = 0; j < n; j++)
+		exprMat[2 * n][j] = 0;
+
+	for (int i = 0; i < n; i++)
+		for (int j = 0; j < n; j++) {
+			exprMat[i][j] = cone1[i][j] * (-1); // (*)
+			exprMat[2 * n][j] += exprMat[i][j];
+		}
+
+	for (int i = 0; i < n; i++)
+		for (int j = 0; j < n; j++)
+			exprMat[i + n][j] = cone2[i][j];
+}
+
 
 /*----------------------------------------------------*/
 
@@ -101,7 +266,7 @@ public:
 					Tm[i][j] = cover[j];
 			else
 				for (int j = 0; j < n; j++)
-					Tm[i][j] = H[j][i];
+					Tm[i][j] = H[i][j];
 
 		return Tm;
 	}
@@ -231,6 +396,7 @@ public:
 				EnumIntDot(Ht, t, m - 1, x);
 			else
 			{
+				/* Крышка сгенерирована */
 				for (int i = 0; i < n; i++)
 					cover[i] = -x[i];
 
@@ -247,6 +413,13 @@ public:
 					std::cout << cover[i] << " ";
 				std::cout << ") | (" << c0 << ")" << std::endl;
 #endif
+#ifdef FILE_MODE
+				std::ofstream fout("res_max_N6_D4.txt", std::ios_base::app);
+				fout << "A suitable cover: ( " << std::endl;
+				for (int i = 0; i < n; i++)
+					fout << cover[i] << " ";
+				fout << ") | (" << c0 << ")" << std::endl;
+#endif
 
 				// Проверка на пустоту
 #ifdef TEST_MOD
@@ -254,15 +427,22 @@ public:
 					std::cout << "Void check : Empty" << std::endl;
 				else
 					std::cout << "Void check : Not Empty" << std::endl;
-#else
-				SimplexIsEmpty(this);
+#endif
+
+#ifdef FILE_MODE
+				if (SimplexIsEmpty(this))
+					fout << "Void check : Empty" << std::endl;
+				else
+					fout << "Void check : Not Empty" << std::endl;
 #endif
 
 				// Вычисление ширины
 #ifdef TEST_MOD
-				//std::cout << "Width: " << CalcSimplexWidth(this) << std::endl;
-#else
-				//CalcSimplexWidth(this);
+				std::cout << "Width: " << CalcSimplexWidth() << std::endl;
+#endif
+#ifdef FILE_MODE
+				fout << "Width: " << CalcSimplexWidth() << std::endl;
+				fout.close();
 #endif
 			}
 
@@ -384,6 +564,18 @@ public:
 	// Печать симплекса
 	void printSimplex()
 	{
+#ifdef FILE_MODE
+		std::ofstream fout("res_max_N6_D4.txt", std::ios_base::app);
+		fout << "> " << std::endl;
+		for (int i = 0; i < n; i++)
+		{
+			for (int j = 0; j < n; j++)
+				fout << H[i][j] << " ";
+			fout << " | " << b[i] << std::endl;
+		}
+		fout << "< " << std::endl;
+		fout.close();
+#else
 		std::cout << "> " << std::endl;
 		for (int i = 0; i < n; i++)
 		{
@@ -392,6 +584,7 @@ public:
 			std::cout << " | " << b[i] << std::endl;
 		}
 		std::cout << "< " << std::endl;
+#endif
 	}
 
 	// Возвращает произведение элементов главной диагонали
@@ -419,8 +612,15 @@ public:
 			_NumOfCone++;
 #ifdef TEST_MOD
 			std::cout << std::endl << std::endl << "Number of cone: " << _NumOfCone;
-			std::cout << std::endl << "Determinate: " << MultMainDiag();
+			std::cout << std::endl << "Determinate: " << MultMainDiag() << std::endl;
 			printSimplex();
+#endif
+#ifdef FILE_MODE
+			std::ofstream fout("res_max_N6_D4.txt", std::ios_base::app);
+			fout << std::endl << std::endl << "Number of cone: " << _NumOfCone;
+			fout << std::endl << "Determinate: " << MultMainDiag() << std::endl;
+			printSimplex();
+			fout.close();
 #else
 			std::cout << "d";
 #endif
@@ -434,6 +634,135 @@ public:
 		}
 
 		H[_i][_j] = 0;
+	}
+	
+	// Функция считающая ширину симплекса
+	double CalcSimplexWidth()
+	{
+		// Направление по которому максимум
+		double *minDirect = new double[n];
+		// Ширина
+		double minWidth = INT_MAX;
+		// Вектор вершин
+		std::vector<double*> VertexMas(n+1);
+		for (int i = 0; i < n; i++) {
+			VertexMas[i] = new double[n];
+			VertexMas[i] = Gauss(MatIntToDouble(ReplaceMatrixString(i), n), VecIntToDouble(ReplaceVectorString(i), n), n);
+
+#ifdef TEST_MOD
+			for (int j1 = 0; j1 < n; j1++)
+				std::cout << VertexMas[i][j1] << " ";
+			std::cout << std::endl;
+#endif
+		}
+		VertexMas[n] = Gauss(MatIntToDouble(H, n), VecIntToDouble(b, n), n);
+#ifdef TEST_MOD
+		for (int j1 = 0; j1 < n; j1++)
+			std::cout << VertexMas[n][j1] << " ";
+		std::cout << "\n-------\n" << std::endl;
+#endif
+		// Вектор конусов из перпендикуляров, A^T^-1
+		std::vector<int**> ConeMas(n + 1);
+		for (int i = 0; i < n; i++)
+		{
+			ConeMas[i] = FindAttachedMatrix(ReplaceMatrixString(i), n);
+#ifdef TEST_MOD
+			for (int i1 = 0; i1 < n; i1++) {
+				for (int j1 = 0; j1 < n; j1++)
+					std::cout << ConeMas[i][i1][j1] << " ";
+				std::cout << std::endl;
+			}
+			std::cout << std::endl;
+#endif
+		}
+		ConeMas[n] = FindAttachedMatrix(H, n);
+#ifdef TEST_MOD
+		for (int i1 = 0; i1 < n; i1++) {
+			for (int j1 = 0; j1 < n; j1++)
+				std::cout << ConeMas[n][i1][j1] << " ";
+			std::cout << std::endl;
+		}
+		std::cout << "\n-------\n" << std::endl;
+#endif
+
+		// Перебор по всем парам вершин
+		for (int i = 0; i < n + 1; i++)
+			for (int j = 0; j < n + 1; j++)
+				if (i != j)
+				{
+					int exprSize = 2 * n + 1;
+					int **FVExpr = new int*[exprSize];
+					for (int k = 0; k < exprSize; k++)
+						FVExpr[k] = new int[n];
+					int *FVB = new int[exprSize];
+					for (int k = 0; k < 2*n; k++)
+						FVB[k] = 0;
+					FVB[2*n] = -1;
+
+					SetAndUniteExpr(FVExpr, n, ConeMas[i], ConeMas[j]);
+
+					// Целевая функция
+					double *ObjFunf = new double[n];
+					for (int k = 0; k < n; k++)
+						ObjFunf[k] = VertexMas[i][k] - VertexMas[j][k];
+
+					double *direct = new double[n];
+					CPLEX_MIP(direct, MIP_OFF, FVExpr, FVB, n, exprSize, ObjFunf, MIP_MIN);
+
+					double width = 0;
+					for (int k = 0; k < n; k++)
+						width += ObjFunf[k] * direct[k];
+					if (width < minWidth) {
+						minWidth = width;
+						for (int k = 0; k < n; k++)
+							minDirect[k] = direct[k];
+					}
+
+					delete[] direct;
+
+					for (int k = 0; k < exprSize; k++)
+						delete[] FVExpr[k];
+					delete[] FVExpr;
+					delete[] FVB;
+					delete[] ObjFunf;
+				}
+
+#ifdef CONSCIENCE
+		// Подсчет ширины по известному направлению
+		int exprSize = n + 1;
+		int **FinExpr = new int*[exprSize];
+		for (int k = 0; k < exprSize; k++)
+			FinExpr[k] = new int[n];
+		int *FinB = new int[exprSize];
+		for (int i = 0; i < n; i++)
+		{
+			FinB[i] = b[i];
+			for (int j = 0; j < n; j++)
+				FinExpr[i][j] = H[i][j];
+		}
+		for (int k = 0; k < n; k++)
+			FinExpr[n][k] = cover[k];
+		FinB[n] = c0;
+
+		double *resMax = new double[n];
+		double *resMin = new double[n];
+
+		CPLEX_MIP(resMax, MIP_OFF, FinExpr, FinB, n, exprSize, minDirect, MIP_MAX);
+		CPLEX_MIP(resMin, MIP_OFF, FinExpr, FinB, n, exprSize, minDirect, MIP_MIN);
+
+		minWidth = 0;
+		for (int k = 0; k < n; k++) {
+			minWidth += (resMax[k] - resMin[k])*(resMax[k] - resMin[k]);
+		}
+#endif
+
+		for (int i = 0; i < n + 1; i++)
+			delete[] VertexMas[i];
+		for (int i = 0; i < n + 1; i++)
+			delete[] ConeMas[i];
+		delete[] minDirect;
+
+		return minWidth;
 	}
 };
 
@@ -623,140 +952,6 @@ double* Gauss(double **a, double *y, int n)
 	}
 	return x;
 }
-
-// CPLEX - MIP [ObjFunc->Trg, ExprMat<=b]
-int* CPLEX_MIP(int **ExprMat, int *b, int Size, int exprSize, int *ObjFunc, Target Trg, AdditRestr Ar = MIP_NONE_REST)
-{
-	int *result = new int[Size];
-
-	IloEnv env; // Среда
-	std::stringstream logfile;
-
-	try {
-		// lowerBound и upperBound ограничения на X
-		int upperBound = INT_MAX, lowerBound = -INT_MAX;
-		if (Ar == MIP_XG0)
-			lowerBound = 0;
-		else if (Ar == MIP_XL0)
-			upperBound = 0;
-
-		IloNumVarArray x(env, Size, lowerBound, upperBound, ILOINT);
-		IloModel model(env); // Модель
-		IloCplex cplex(env);
-		cplex.setOut(env.getNullStream());
-
-		cplex.setParam(IloCplex::Threads, 1);
-		//cplex.setParam(IloCplex::WorkMem, 1024);
-		cplex.setParam(IloCplex::TreLim, 2048);
-		cplex.setParam(IloCplex::Param::Parallel, 1);
-
-		cplex.extract(model);
-
-		IloNumVarArray startVar(env); // Переменные
-		IloNumArray startVal(env); // Значения переменных
-
-		for (int i = 0; i < Size; i++) {
-			startVar.add(x[i]);
-			startVal.add(0);
-		}
-
-		// Целевая функиция
-		IloExpr obj(env);
-		for (int i = 0; i < Size; i++)
-			obj += ObjFunc[i] * startVar[i];
-		if (Trg == MIP_MAX)
-			model.add(IloMaximize(env, obj));
-		else if (Trg == MIP_MIN)
-			model.add(IloMinimize(env, obj));
-		obj.end();
-
-		// Ограничения
-		for (int i = 0; i < exprSize; i++) {
-			IloExpr expr(env);
-			for (int j = 0; j < Size; j++)
-				expr += ExprMat[i][j] * startVar[j];
-			model.add(expr <= b[i]);
-			expr.end();
-		}
-
-		// Запуск MIP mode
-		cplex.addMIPStart(startVar, startVal);
-
-
-		// Solve
-		cplex.solve();
-		if (cplex.getStatus() == IloAlgorithm::Optimal) {
-			cplex.getValues(startVal, startVar);
-#ifdef TEST_MOD
-			env.out() << "Values = " << startVal << std::endl;
-#endif
-		}
-
-		// Переводим результат из IloNumVarArray в Int
-		const IloArray<double> &a = (IloArray<double> &)startVal;
-		for (int i = 0; i < Size; i++)
-			result[i] = a[i];
-
-		startVal.end();
-		startVar.end();
-	}
-	catch (IloException& e) {
-		std::cerr << "C-Exp: " << e << std::endl;
-	}
-	catch (...) {
-		std::cerr << "Unknown Exception" << std::endl;
-	}
-
-	//const std::string str = logfile.str();
-	//std::cout << str << std::endl;
-	env.end();
-
-	return result;
-}
-
-#define NOT_WORKING -1
-
-// Функция считающая ширину симплекса
-int CalcSimplexWidth(Simplex *S)
-{
-	// Вершина конуса
-	double **Vertex;
-	SMP_NEW(Vertex, S->n + 1, double);
-
-	for (int i = 0; i < S->n + 1; i++)
-	{
-		int ** rep_i;
-		SMP_NEW(rep_i, S->n, int);
-		rep_i = S->ReplaceMatrixString(i);
-
-		double **rep_d;
-		SMP_NEW(rep_d, S->n, double);
-		rep_d = MatIntToDouble(rep_i, S->n);
-
-		Vertex[i] = Gauss(rep_d, VecIntToDouble(S->ReplaceVectorString(i), S->n),
-			S->n);
-	}
-
-	// S->ReplaceMatrixString(iV) -> -1 -> T -> *(-1) | b = {0} | n
-	// S->ReplaceMatrixString(jV) -> -1 -> T | b = {0} | n
-	// w = SUMM(Bi) | b = -1 | 1
-
-	for(int iV = 0; iV < S->n; iV++)
-		for (int jV = iV + 1; jV < S->n + 1; jV++)
-		{
-			int **ExprMat = new int*[2 * S->n + 1];
-			for (int newCount = 0; newCount < 2 * S->n + 1; newCount++)
-				ExprMat[newCount] = new int[S->n];
-
-
-			//CPLEX_MIP();
-		}
-
-	SMP_DELETE(Vertex, S->n + 1);
-
-	return NOT_WORKING;
-}
-
 /*----------------------------------------------------*/
 // Тесты для CPLEX MIP
 #define TEST_COMPIRE(val1, val2)            \
@@ -767,73 +962,214 @@ else {                                      \
 	std::cout << "[ FAILED ]" << std::endl; \
 }
 
-void RunAllTests() {
+// Виды тестов
+enum TypeTest {
+	TESTS_CPLEX_MIP   = 1 << 0,
+	TESTS_CALC_WIDTH  = 1 << 1,
+	TESTS_OTHER       = 1 << 2,
+
+	TESTS_ALL         = 7
+};
+
+void RunAllTests(TypeTest type = TESTS_ALL) {
 
 	int Delta = 4;
-	int N = 2;
+	const int N = 2;
 	Simplex S(N, Delta + 1);
-	int *res;
+	int res[N];
 
-	/*Case 00*/
-	S.H[0][0] = 2; S.H[0][1] = 0; S.b[0] = 1 - 1;
-	S.H[1][0] = 1; S.H[1][1] = 2; S.b[1] = 0 - 1;
+	if (type & TESTS_CPLEX_MIP) {
 
-	S.cover[0] = -1;
-	S.cover[1] = -1;
+		std::cout << std::endl << "============ TYPE TEST : CPLEX MIP" << std::endl << std::endl;
 
-	res = CPLEX_MIP(S.H, S.b, S.n, S.n, S.cover, MIP_MIN);
+		/*Case 01*/
+		S.H[0][0] = 2; S.H[0][1] = 0; S.b[0] = 1 - 1;
+		S.H[1][0] = 1; S.H[1][1] = 2; S.b[1] = 0 - 1;
 
-	std::cout << "Case 00: "; TEST_COMPIRE(res[0] * S.cover[0] + res[1] * S.cover[1], 1); std::cout << std::endl;
+		S.cover[0] = -1;
+		S.cover[1] = -1;
 
-	/*Case 01*/
-	S.H[0][0] = 1; S.H[0][1] = 0; S.b[0] = 1;
-	S.H[1][0] = -3; S.H[1][1] = 2; S.b[1] = 3;
+		CPLEX_MIP(res, MIP_ON, S.H, S.b, S.n, S.n, S.cover, MIP_MIN);
 
-	S.cover[0] = -3;
-	S.cover[1] = -3;
+		std::cout << "Case 01: "; TEST_COMPIRE(res[0] * S.cover[0] + res[1] * S.cover[1], 1); std::cout << std::endl;
 
-	res = CPLEX_MIP(S.H, S.b, S.n, S.n, S.cover, MIP_MIN);
+		/*Case 02*/
+		S.H[0][0] = 1; S.H[0][1] = 0; S.b[0] = 1;
+		S.H[1][0] = -3; S.H[1][1] = 2; S.b[1] = 3;
 
-	std::cout << "Case 01: "; TEST_COMPIRE(res[0] * S.cover[0] + res[1] * S.cover[1], -12); std::cout << std::endl;
+		S.cover[0] = -3;
+		S.cover[1] = -3;
 
-	/*Case 02*/
-	S.H[0][0] = 1; S.H[0][1] = 0; S.b[0] = 1;
-	S.H[1][0] = -3; S.H[1][1] = 2; S.b[1] = 3;
+		CPLEX_MIP(res, MIP_ON, S.H, S.b, S.n, S.n, S.cover, MIP_MIN);
 
-	S.cover[0] = 1;
-	S.cover[1] = 1;
+		std::cout << "Case 02: "; TEST_COMPIRE(res[0] * S.cover[0] + res[1] * S.cover[1], -12); std::cout << std::endl;
 
-	res = CPLEX_MIP(S.H, S.b, S.n, S.n, S.cover, MIP_MAX);
+		/*Case 03*/
+		S.H[0][0] = 1; S.H[0][1] = 0; S.b[0] = 1;
+		S.H[1][0] = -3; S.H[1][1] = 2; S.b[1] = 3;
 
-	std::cout << "Case 02: "; TEST_COMPIRE(res[0] * S.cover[0] + res[1] * S.cover[1], 4); std::cout << std::endl;
+		S.cover[0] = 1;
+		S.cover[1] = 1;
 
-	/*Case 03*/
-	S.H[0][0] = 2; S.H[0][1] = 3; S.b[0] = 6;
-	S.H[1][0] = 2; S.H[1][1] = -3; S.b[1] = 3;
+		CPLEX_MIP(res, MIP_ON, S.H, S.b, S.n, S.n, S.cover, MIP_MAX);
 
-	S.cover[0] = 3;
-	S.cover[1] = 1;
+		std::cout << "Case 03: "; TEST_COMPIRE(res[0] * S.cover[0] + res[1] * S.cover[1], 4); std::cout << std::endl;
 
-	res = CPLEX_MIP(S.H, S.b, S.n, S.n, S.cover, MIP_MAX);
+		/*Case 04*/
+		S.H[0][0] = 2; S.H[0][1] = 3; S.b[0] = 6;
+		S.H[1][0] = 2; S.H[1][1] = -3; S.b[1] = 3;
 
-	std::cout << "Case 03: "; TEST_COMPIRE(res[0] * S.cover[0] + res[1] * S.cover[1], 4); std::cout << std::endl;
+		S.cover[0] = 3;
+		S.cover[1] = 1;
 
-	/*Case 04*/
-	Delta = 14;
-	N = 3;
-	Simplex S3(N, Delta + 1);
+		CPLEX_MIP(res, MIP_ON, S.H, S.b, S.n, S.n, S.cover, MIP_MAX);
 
-	S3.H[0][0] = 3; S3.H[0][1] = 2; S3.H[0][2] = 8; S3.b[0] = 11;
-	S3.H[1][0] = 2; S3.H[1][1] = 0; S3.H[1][2] = 1; S3.b[1] = 5;
-	S3.H[2][0] = 3; S3.H[2][1] = 3; S3.H[2][2] = 1; S3.b[2] = 13;
+		std::cout << "Case 04: "; TEST_COMPIRE(res[0] * S.cover[0] + res[1] * S.cover[1], 4); std::cout << std::endl;
 
-	S3.cover[0] = 11;
-	S3.cover[1] = 5;
-	S3.cover[2] = 4;
+		/*Case 05*/
+		Delta = 14;
+		int N3 = 3;
+		Simplex S3(N3, Delta + 1);
 
-	res = CPLEX_MIP(S3.H, S3.b, S3.n, S3.n, S3.cover, MIP_MAX, MIP_XG0);
+		S3.H[0][0] = 3; S3.H[0][1] = 2; S3.H[0][2] = 8; S3.b[0] = 11;
+		S3.H[1][0] = 2; S3.H[1][1] = 0; S3.H[1][2] = 1; S3.b[1] = 5;
+		S3.H[2][0] = 3; S3.H[2][1] = 3; S3.H[2][2] = 1; S3.b[2] = 13;
 
-	std::cout << "Case 04: "; TEST_COMPIRE(res[0] * S3.cover[0] + res[1] * S3.cover[1] + res[2] * S3.cover[2], 32); std::cout << std::endl;
+		S3.cover[0] = 11;
+		S3.cover[1] = 5;
+		S3.cover[2] = 4;
+
+		CPLEX_MIP(res, MIP_ON, S3.H, S3.b, S3.n, S3.n, S3.cover, MIP_MAX, MIP_XG0);
+
+		std::cout << "Case 05: "; TEST_COMPIRE(res[0] * S3.cover[0] + res[1] * S3.cover[1] + res[2] * S3.cover[2], 32); std::cout << std::endl;
+
+		/*Case 06*/
+		double resD[N];
+		S.H[0][0] = 1; S.H[0][1] = 0; S.b[0] = 0;
+		S.H[1][0] = 1; S.H[1][1] = 4; S.b[1] = 2;
+
+		S.cover[0] = 1;
+		S.cover[1] = 1;
+
+		CPLEX_MIP(resD, MIP_OFF, S.H, S.b, S.n, S.n, VecIntToDouble(S.cover, S.n), MIP_MAX);
+
+		std::cout << "Case 06: "; TEST_COMPIRE(resD[0] * S.cover[0] + resD[1] * S.cover[1], 0.5); std::cout << std::endl;
+
+		/*Case 07*/
+		/*int exprNum = 3;
+		double resD[N];
+		S.H[0][0] = 1; S.H[0][1] = 0; S.b[0] = 0;
+		S.H[1][0] = 1; S.H[1][1] = 2; S.b[1] = 0;
+
+		S.cover[0] = -1; S.cover[1] = -1; S.c0 = 1;
+
+		int **exprMas = new int*[exprNum];
+		for (int newCount = 0; newCount < exprNum; newCount++)
+			exprMas[newCount] = new int[N];
+
+		int *exprB = new int[exprNum];
+
+		exprMas[0][0] = S.H[0][0]; exprMas[0][1] = S.H[0][1]; exprB[0] = S.b[0];
+		exprMas[1][0] = S.H[1][0]; exprMas[1][1] = S.H[1][1]; exprB[1] = S.b[1];
+		exprMas[2][0] = S.cover[0]; exprMas[2][1] = S.cover[1]; exprB[2] = S.c0;
+
+
+		CPLEX_MIP(resD, MIP_OFF, exprMas, exprB, N, exprNum, S.cover, MIP_MAX);
+
+		std::cout << "Case 07: "; TEST_COMPIRE(resD[0] * S.cover[0] + resD[1] * S.cover[1], 0.5); std::cout << std::endl;*/
+	}
+	if (type & TESTS_CALC_WIDTH) {
+
+		std::cout << std::endl << "============ TYPE TEST : WIDTH CALC" << std::endl << std::endl;
+
+		double width = 0;
+
+		/*Case 01*/
+		S.H[0][0] = 1; S.H[0][1] = 0; S.b[0] = 0;
+		S.H[1][0] = 1; S.H[1][1] = 2; S.b[1] = 0;
+
+		S.cover[0] = -1;
+		S.cover[1] = -1;
+		S.c0 = 1;
+
+		width = S.CalcSimplexWidth();
+
+		std::cout << "Case 01: "; TEST_COMPIRE(width, sqrt(2)/2); std::cout << std::endl;
+
+		/*Case 02*/
+		S.H[0][0] = 1; S.H[0][1] = 0; S.b[0] = 0;
+		S.H[1][0] = 2; S.H[1][1] = 3; S.b[1] = 0;
+
+		S.cover[0] = -2;
+		S.cover[1] = -2;
+		S.c0 = 1;
+
+		width = S.CalcSimplexWidth();
+#ifdef CONSCIENCE
+		std::cout << "Case 02: "; TEST_COMPIRE(width, sqrt(2) / 8); std::cout << std::endl;
+#else
+		std::cout << "Case 02: "; TEST_COMPIRE(width, width); std::cout << std::endl;
+#endif
+	}
+	if (type & TESTS_OTHER)
+	{
+		std::cout << std::endl << "============ TYPE TEST : FIND ATTACHED MATRIX" << std::endl << std::endl;
+
+		int famN = 2;
+		int **mas;
+		SMP_NEW(mas, famN, int);
+		int **famRes;
+		bool testRes;
+
+		/*Case 01*/
+		mas[0][0] = 1; mas[0][1] = 0;
+		mas[1][0] = 1; mas[1][1] = 2;
+		famRes = FindAttachedMatrix(mas, famN);
+
+		testRes = true;
+		if (famRes[0][0] != 2 ) testRes = false;
+		if (famRes[0][1] != -1) testRes = false;
+		if (famRes[1][0] != 0 ) testRes = false;
+		if (famRes[1][1] != 1 ) testRes = false;
+
+		std::cout << "Case 01: "; TEST_COMPIRE(testRes, true); std::cout << std::endl;
+
+		/*Case 02*/
+		mas[0][0] = 1; mas[0][1] = 0;
+		mas[1][0] = -1; mas[1][1] = -1;
+		famRes = FindAttachedMatrix(mas, famN);
+
+		testRes = true;
+		if (famRes[0][0] != 1 ) testRes = false;
+		if (famRes[0][1] != -1) testRes = false;
+		if (famRes[1][0] != 0 ) testRes = false;
+		if (famRes[1][1] != -1) testRes = false;
+
+		std::cout << "Case 02: "; TEST_COMPIRE(testRes, true); std::cout << std::endl;
+
+		/*Case 03*/
+		int **mas3;
+		SMP_NEW(mas3, famN + 1, int);
+		int **famRes3;
+
+		mas3[0][0] = 1; mas3[0][1] = 0; mas3[0][2] = 0;
+		mas3[1][0] = 1; mas3[1][1] = -3; mas3[1][2] = 0;
+		mas3[2][0] = 4; mas3[2][1] = 3; mas3[2][2] = 5;
+		famRes3 = FindAttachedMatrix(mas3, famN + 1);
+
+		testRes = true;
+		if (famRes3[0][0] != 15) testRes = false; if (famRes3[0][1] != 5) testRes = false; if (famRes3[0][2] != -15) testRes = false;
+		if (famRes3[1][0] != 0) testRes = false; if (famRes3[1][1] != -5) testRes = false; if (famRes3[1][2] != 3) testRes = false;
+		if (famRes3[2][0] != 0) testRes = false; if (famRes3[2][1] != 0) testRes = false; if (famRes3[2][2] != 3) testRes = false;
+
+		SMP_DELETE(mas3, famN + 1);
+		SMP_DELETE(famRes3, famN + 1);
+
+		std::cout << "Case 03: "; TEST_COMPIRE(testRes, true); std::cout << std::endl;
+
+		SMP_DELETE(mas, famN);
+	}
+
 }
 
 /*----------------------------------------------------*/
@@ -863,14 +1199,16 @@ bool SimplexIsEmpty(Simplex *S)
 	S.H[1][0] = 3; S.H[1][1] = 4; S.b[1] = 2;
 
 	S.cover[0] = -3; S.cover[1] = -3; S.c0 = -1;*/
-	
+
 	// Уменьшенное b на единицу
 	int *b_inc = new int[S->n];
 	for (int i = 0; i < S->n; i++)
 		b_inc[i] = S->b[i] - 1;
 
 
-	int *res = CPLEX_MIP(S->H, b_inc, S->n, S->n, S->cover, MIP_MIN);
+	int *res = new int[S->n];
+	
+	CPLEX_MIP(res, MIP_ON, S->H, b_inc, S->n, S->n, S->cover, MIP_MIN);
 
 	int res_d = 0;
 
@@ -878,9 +1216,14 @@ bool SimplexIsEmpty(Simplex *S)
 		res_d += res[i] * S->cover[i];
 	}
 
+	delete[] res;
+
 #ifdef TEST_MOD
 	std::cout << "Obj func: " << res_d << std::endl;
 #endif
+	// ФИНТ УШАМИ!!!
+	if (S->c0 < res_d)
+		S->c0 = res_d;
 
 	return (S->c0 <= res_d);
 }
@@ -892,6 +1235,13 @@ void GetAllSimplex(int &n, int &delta)
 	std::cout << "N: " << n << std::endl;
 	std::cout << "Delta: " << delta << std::endl;
 #endif
+#ifdef FILE_MODE
+	std::ofstream fout("res_max_N6_D4.txt", std::ios_base::out);
+	fout << "Simplex" << std::endl;
+	fout << "N: " << n << std::endl;
+	fout << "Delta: " << delta << std::endl;
+#endif
+
 
 	Simplex s(n, delta + 1);
 
@@ -906,10 +1256,15 @@ void GetAllSimplex(int &n, int &delta)
 			{
 #ifdef TEST_MOD
 				std::cout << std::endl << std::endl << "Number of cone: " << NumOfCone;
-				std::cout << std::endl << "Determinate: " << s.MultMainDiag();
+				std::cout << std::endl << "Determinate: " << s.MultMainDiag() << std::endl;
 				s.printSimplex();
 #else
 				std::cout << "d";
+#endif
+#ifdef FILE_MODE
+				fout << std::endl << std::endl << "Number of cone: " << NumOfCone;
+				fout << std::endl << "Determinate: " << s.MultMainDiag() << std::endl;
+				s.printSimplex();
 #endif
 				GetAllCovers(&s, s.n);
 
@@ -930,6 +1285,10 @@ void GetAllSimplex(int &n, int &delta)
 	}
 
 	std::cout << "Number of all cones: " << NumOfCone << std::endl;
+#ifdef FILE_MODE
+	fout << "Number of all cones: " << NumOfCone << std::endl;
+	fout.close();
+#endif
 }
 
 /*----------------------------------------------------*/
@@ -987,19 +1346,13 @@ int main(int argc, char** argv)
 
 #endif
 
-	//RunAllTests();
-
-	Simplex *s = new Simplex(2, 3);
-	s->H[0][0] = -1; s->H[0][1] = 0; s->b = 0;
-	s->H[1][0] = 0; s->H[1][1] = -1; s->b = 0;
-	s->cover[0] = 1; s->cover[1] = 1; s->c0 = 1;
-
-	//std::cout << "Width: " << CalcSimplexWidth(s);
+	setlocale(LC_ALL, "Russian");
+	//RunAllTests(TESTS_CALC_WIDTH);
 
 	// ------------------------------------------------------------------------------------------------
-
-	int sN = 8, eN = 8;
-	int sDelta = 3, eDelta = 3;
+//#ifdef SOURCE_CODE
+	int sN = 6, eN = 6;
+	int sDelta = 4, eDelta = 4;
 
 	double start_time, end_time;
 
@@ -1009,14 +1362,27 @@ int main(int argc, char** argv)
 			std::cout << std::endl << "Delta: " << delta;
 			std::cout << std::endl << "N: " << n;
 			std::cout << std::endl << "-----------------------------";
+#ifdef FILE_MODE
+			std::ofstream fout("res_max_N6_D4.txt");
+			fout << std::endl << "-----------------------------------------------------------";
+			fout << std::endl << "Delta: " << delta;
+			fout << std::endl << "N: " << n;
+			fout << std::endl << "-----------------------------";
+#endif
 			start_time = clock();
 			GetAllSimplex(n, delta);
 			end_time = clock();
 			std::cout << std::endl << "-----------------------------";
 			std::cout << std::endl << "Time: " << (end_time - start_time) / 1000 << std::endl;
 			std::cout << std::endl << "-----------------------------------------------------------" << std::endl;
+#ifdef FILE_MODE
+			fout << std::endl << "-----------------------------";
+			fout << std::endl << "Time: " << (end_time - start_time) / 1000 << std::endl;
+			fout << std::endl << "-----------------------------------------------------------" << std::endl;
+			fout.close();
+#endif
 		}
-
+//#endif
 	return 0;
 }
 
