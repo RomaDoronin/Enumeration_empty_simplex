@@ -5,6 +5,9 @@
 
 *.sln
 *.VC.db
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
  
 # Builds
 *.dll
