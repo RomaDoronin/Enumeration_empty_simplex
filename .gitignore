@@ -1,0 +1,14 @@
+# VS
+/.vs/
+/x64/
+/tmp/
+
+*.sln
+*.VC.db
+ 
+# Builds
+*.dll
+*.iobj
+*.ipdb
+*.pdb
+*.exe
