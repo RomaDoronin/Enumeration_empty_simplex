@@ -2,6 +2,7 @@
 /.vs/
 /x64/
 /tmp/
+/build/
 
 *.sln
 *.VC.db
